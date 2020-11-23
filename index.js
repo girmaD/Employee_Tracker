@@ -8,15 +8,9 @@ require('dotenv').config();
 
 
 const connection = mysql.createConnection({
-    host: "localhost",
-  
-    // Your port; if not 3306
-    port: 3306,
-  
-    // Your username
-    user: "root",
-  
-    // Your password
+    host: "localhost",   
+    port: 3306,    
+    user: "root",  
     password: process.env.SQL_PASS,
     database: process.env.SQL_DB
 });
@@ -26,9 +20,9 @@ connection.connect(err => {
     console.log(`connected as id  ${connection.threadId} \n`);  
     startQuestions();
 });
-// Glaobal variables
-// let managersArr = [];
-// let deptArr = [];
+// global variables 
+let empArr;
+
 //For fields defined as NOT NULL in the table schema, this function validates by not accepting null values
 function notNull(answer) {
     if(answer !== '') {
@@ -36,7 +30,41 @@ function notNull(answer) {
     } else {
         console.log('. Please enter an answer to proceed')
         return false
-    }
+    }    
+}
+
+function getEmpArr() {
+    connection.query('SELECT * FROM employee', (err, employees) => {
+        if(err) throw err;   
+        empArr = []; 
+        for(const employee of employees) {
+            let emp = employee.first_name;
+            empArr.push(emp)
+        }
+        return empArr;
+    })
+}
+
+function getRoleArr() {
+    connection.query('SELECT * FROM role', (err, roles) => {
+        if(err) throw err;
+        let roleArr = [];
+         for(const role of roles) {
+             let listRole = role.title;
+             roleArr.push(listRole)
+         }
+         return roleArr;
+    })
+}
+
+
+// retrieving data from tables
+function selectTable(table) {
+    connection.query(`SELECT * FROM ${table}`, (err, data) => {
+        if(err) throw err;
+        console.table(data);
+        startQuestions();
+    })
 }
 
 //Here is the first question to gather information through the command line
@@ -53,7 +81,8 @@ const startQuestions = () => inquirer.prompt([
             "View roles",
             "View employees",
             'Remove employee',
-            "Update employee roles",
+            'Update employee roles',
+            'View the total utilized budget of a department',
             "Exit"
         ]
     }
@@ -120,7 +149,7 @@ function addRoles() {
             let dept = department.name;
             deptArr.push(dept)
         }
-        
+       
         inquirer.prompt([
             {
                 type: 'input',
@@ -166,17 +195,16 @@ function addRoles() {
 
 function addEmployees() {
     let roleTitle = []; 
-    let managersArr = [];
-    connection.query(`SELECT * FROM employee WHERE manager_id IS NULL`, (err, managers) => {
+    let empArr = [];
+    connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;        
-        for(const manager of managers) {
-            let mgr = manager.first_name 
-            managersArr.push(mgr)
+        for(const employee of employees) {
+            let emp = `${employee.first_name} ${employee.last_name}`;
+            empArr.push(emp)
         } 
     })
     connection.query('SELECT * FROM role', (err, roles) => { 
-        if(err) throw err;        
-               
+        if(err) throw err;                
         for(const role of roles) {
             let title = role.title;
             roleTitle.push(title)
@@ -205,7 +233,7 @@ function addEmployees() {
                 type: 'list',
                 name: 'manager',
                 message: 'What is the manager name of this employee?',
-                choices: managersArr
+                choices: empArr
             }
         ])
         .then(res => {
@@ -215,7 +243,7 @@ function addEmployees() {
                     roleId = roles[i].id;
                 }
             }
-            connection.query('SELECT * FROM employee WHERE first_name = ?', [res.manager], (err, manager) => {
+            connection.query('SELECT * FROM employee WHERE CONCAT(first_name, " ", last_name) = ?', [res.manager], (err, manager) => {
                 if(err) throw err;               
                 // console.log(employee)
                 let query = 'INSERT INTO employee SET ?';
@@ -236,18 +264,8 @@ function addEmployees() {
     })
 }
 
-function viewDepartments() {    
-    connection.query('SELECT * FROM department', (err, depts) => {
-        if(err) throw err;
-        // let table = [];
-        // for(const dept of depts) {
-        //    let eachDept = dept.name
-                
-        //    deptArr.push(eachDept)
-        // }
-        console.table(depts);        
-        startQuestions();
-    })    
+function viewDepartments() {        
+    selectTable('department');
 }
 
 function viewRoles() {
@@ -256,7 +274,7 @@ function viewRoles() {
         if(err) throw err;        
         console.table(roles);        
         startQuestions();
-    })
+    })    
 }
 
 function viewEmployees() {
@@ -293,27 +311,11 @@ function viewEmployees() {
 
 //functions to view employees
 //================================================
-function viewAllEmployees() {
-    connection.query('SELECT * FROM employee', (err, employees) => {
-        if(err) throw err;
-        let empArr = [];
-        for(const employee of employees) {
-           let empObj = 
-                {
-                    id: employee.id,
-                    first_name: employee.first_name,
-                    last_name: employee.last_name,
-                    role_id: employee.role_id,
-                    manager_id: employee.manager_id
-                }
-            empArr.push(empObj)
-        }
-        console.table(empArr);        
-        startQuestions();
-    })
+function viewAllEmployees() {    
+    selectTable('employee');
 }
 
-function viewEmployeesByDepartment() {
+function viewEmployeesByDepartment() {  
     connection.query('SELECT * FROM department', (err, departments) => { 
         if(err) throw err;        
         let deptArr = [];         
@@ -321,7 +323,6 @@ function viewEmployeesByDepartment() {
             let dept = department.name;
             deptArr.push(dept)
         }
-
         inquirer.prompt(
             {
                 type: 'list',
@@ -339,47 +340,32 @@ function viewEmployeesByDepartment() {
                 startQuestions();
             })
         })
-    })
-    
+    })    
 }
 
 function viewEmployeesByManager() {
-    connection.query(`SELECT * FROM employee WHERE manager_id IS NULL`, (err, managers) =>{
+    connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;
-        let managersArr = [];
-        for(const manager of managers) {
-            let mgr = manager.first_name 
-            managersArr.push(mgr)
-        }
+        let empArr = [];
+        for(const employee of employees) {
+            let emp = `${employee.first_name} ${employee.last_name}`;
+            empArr.push(emp)
+        } 
+        
         inquirer.prompt (
             {
                 type: 'list',
                 name: 'manager',
                 message: 'Under which manager?',
-                choices: managersArr
+                choices: empArr
             }
         ) 
         .then(res => {
-            connection.query('SELECT id FROM employee WHERE first_name = ?', [res.manager], (err, manId) => {
-                if(err) throw err;
-                // let mgrsId = JSON.parse(JSON.stringify(manId))
-                // console.log(mgrsId)
+            connection.query('SELECT id FROM employee WHERE CONCAT(first_name, " ", last_name) = ?', [res.manager], (err, manId) => {
+                if(err) throw err;                
                 connection.query('SELECT * FROM employee WHERE manager_id = ?', [manId[0].id], (err, employees) => {
-                    if(err) throw err;
-                    let empArr = [];
-                    // console.log(employees)
-                    for(const employee of employees) {
-                    let empObj = 
-                            {
-                                id: employee.id,
-                                first_name: employee.first_name,
-                                last_name: employee.last_name,
-                                role_id: employee.role_id,
-                                manager_id: employee.manager_id
-                            }
-                        empArr.push(empObj)
-                    }
-                    console.table(empArr);                           
+                    if(err) throw err;                    
+                    console.table(employees);                           
                     startQuestions();
                 })
             })
@@ -387,16 +373,15 @@ function viewEmployeesByManager() {
     })
 }
 
-
 // a function to remove employee from the database
 function removeEmployees() {
     connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;
         let empArr = [];
         for(const employee of employees) {
-            let emp = employee.first_name;
+            let emp = `${employee.first_name} ${employee.last_name}`;
             empArr.push(emp)
-        }
+        }    
         inquirer.prompt(
             {
                 type: 'list',
@@ -406,57 +391,63 @@ function removeEmployees() {
             }
         )
         .then(res => {
-            connection.query('DELETE FROM employee WHERE first_name =?', [res.select], (err)=>{
+            connection.query('DELETE FROM employee WHERE CONCAT(first_name, " ", last_name) = ?', [res.select], (err)=>{
                 if(err) throw err;
-                console.log(`employee ${res.select} has been deleted from the database`)
+                console.log(`${res.select} has been deleted from the database`)
                 startQuestions();
             })
         })
     })
    
 }
-// a function to update employee roles
-// ====================================
+// A function to update employee roles
+//====================================
 function updateEmployeeRoles() {
-    let empArr = [];
-    let role_idArr = [];
-    let rolesArr = [];
-
     connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;
-            
+        let empArr = [];
         for(const employee of employees) {
-            let emp = employee.first_name              
-            let roleId = employee.role_id    
-            empArr.push(emp)     
-            role_idArr.push(roleId);
+            let emp = `${employee.first_name} ${employee.last_name}`
+            empArr.push(emp)
         }
-    })
-    connection.query('SELECT * FROM role', (err, roles) => {
-        if(err) throw err;            
-        for(const role of roles) {
-            let roleTitle = role.title;
-            rolesArr.push(roleTitle)
-        }
-    })
-
-    inquirer.prompt (
-            {
-                type: 'list',
-                name: 'update',
-                message: 'Which employee\'s role would you like to update?',
-                choices: empArr 
-            },
-            {
-                type: 'list',
-                name: 'role',
-                message: 'To what role you want to update to?',
-                choices: rolesArr 
-            }
-    )
-    .then(res => {
-
-    })
    
+        inquirer.prompt(
+            {
+                type: 'list',
+                name: 'employee',
+                message: 'Which employee would you like to update the role of?',
+                choices: empArr
+            }
+        )
+        .then(answer => {
+            connection.query('SELECT * FROM role', (err, roles) => {
+               if(err) throw err;
+               let roleArr = [];
+                for(const role of roles) {
+                    let listRole = role.title;
+                    roleArr.push(listRole)
+                }            
+                inquirer.prompt(
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'To which role would like to update?',
+                        choices: roleArr
+                    }
+                )               
+                .then(res => {                   
+                    connection.query('SELECT * FROM role WHERE role.title = ?', [res.role], (err, data) => {
+                        if(err) throw err;
+                        let newId = data[0].id
+                        connection.query(`UPDATE employee SET employee.role_id = '${newId}' WHERE CONCAT(employee.first_name, " ", employee.last_name) = ?`, [answer.employee], (err) => {
+                            if(err) throw err;
+                            console.log('role has been updated');
+                            startQuestions();
+                        })
+                    })
+                })
+            })
+        })
+    })
 }
 
