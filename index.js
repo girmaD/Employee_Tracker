@@ -4,9 +4,10 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const express = require("express");
 const cTable = require('console.table');
+const chalk = require('chalk');
 require('dotenv').config();
 
-
+// connecting to the mysql database
 const connection = mysql.createConnection({
     host: "localhost",   
     port: 3306,    
@@ -15,15 +16,15 @@ const connection = mysql.createConnection({
     database: process.env.SQL_DB
 });
 
+//once attempts were made to connect to databse - a call back function that throws err if err or start other functions if successul
 connection.connect(err => {
     if (err) throw err;
     console.log(`connected as id  ${connection.threadId} \n`);  
+    // this is the function that starts it all
     startQuestions();
 });
-// global variables 
-let empArr;
 
-//For fields defined as NOT NULL in the table schema, this function validates by not accepting null values
+//For fields defined as NOT NULL in the table schema, this function validates by not accepting null values on inquirer
 function notNull(answer) {
     if(answer !== '') {
         return true
@@ -33,41 +34,7 @@ function notNull(answer) {
     }    
 }
 
-function getEmpArr() {
-    connection.query('SELECT * FROM employee', (err, employees) => {
-        if(err) throw err;   
-        empArr = []; 
-        for(const employee of employees) {
-            let emp = employee.first_name;
-            empArr.push(emp)
-        }
-        return empArr;
-    })
-}
-
-function getRoleArr() {
-    connection.query('SELECT * FROM role', (err, roles) => {
-        if(err) throw err;
-        let roleArr = [];
-         for(const role of roles) {
-             let listRole = role.title;
-             roleArr.push(listRole)
-         }
-         return roleArr;
-    })
-}
-
-
-// retrieving data from tables
-function selectTable(table) {
-    connection.query(`SELECT * FROM ${table}`, (err, data) => {
-        if(err) throw err;
-        console.table(data);
-        startQuestions();
-    })
-}
-
-//Here is the first question to gather information through the command line
+//Here is the first question to gather information through the command line using inquirer package
 const startQuestions = () => inquirer.prompt([
     {
         type: "list",
@@ -88,6 +55,7 @@ const startQuestions = () => inquirer.prompt([
     }
 ])
 .then(answer => {
+    //depending on the selected answers, the following functions will be fired
     switch(answer.todo) {
         case "Add departments to the database":
             return addDepartments();
@@ -113,11 +81,14 @@ const startQuestions = () => inquirer.prompt([
         case "Update employee roles":
             return updateEmployeeRoles();
             break;
+        case 'View the total utilized budget of a department':
+            return viewUtilizedBudget();
+            break;
         default:
             connection.end()
     }
 })
-
+// a function to add a department to the database
 function addDepartments() {
     inquirer.prompt(
         {
@@ -135,12 +106,14 @@ function addDepartments() {
             }, 
         (err) => {
             if(err) throw err;
-            console.log('New department has been added to the database')
+            console.log(chalk.magenta('-----------------------------------------'))
+            console.log(chalk.hex('#4BB543')('New department has been added to the database'))
+            console.log(chalk.magenta('-----------------------------------------'))
             startQuestions();
         })
     })    
 }
-
+// a function to add new role to the database
 function addRoles() {      
     connection.query('SELECT * FROM department', (err, departments) => { 
         if(err) throw err;        
@@ -186,13 +159,15 @@ function addRoles() {
                 }, 
             (err) => {
                 if(err) throw err;
-                console.log('New role has been added to the database')
+                console.log(chalk.magenta('-----------------------------------------'))
+                console.log(chalk.hex('#4BB543')('New role has been added to the database'))
+                console.log(chalk.magenta('-----------------------------------------'))
                 startQuestions();
             })
         })
     })
 }
-
+// a function to add new employees to the database
 function addEmployees() {
     let roleTitle = []; 
     let empArr = [];
@@ -256,27 +231,40 @@ function addEmployees() {
                     }, 
                 (err) => {
                     if(err) throw err;
-                    console.log('New employee has been added to the database')
+                    console.log(chalk.magenta('-----------------------------------------'))
+                    console.log(chalk.hex('#4BB543')('New employee has been added to the database'))
+                    console.log(chalk.magenta('-----------------------------------------'))
                     startQuestions();
                 })
             })
         })
     })
 }
-
-function viewDepartments() {        
-    selectTable('department');
+//A function to view all departments on the database
+function viewDepartments() {     
+    connection.query('SELECT * FROM department', (err, departments) => {
+        if(err) throw err;
+        console.log(chalk.hex('#23C552')('Displaying Department Table'));
+        console.log(chalk.hex('#F84F31')('------------------------------'));
+        console.table(departments);
+        console.log(chalk.hex('#F84F31')('------------------------------'));
+        startQuestions();
+    })   
+    // selectTable('department');
 }
-
-function viewRoles() {
+//A function to view all roles in the database
+function viewRoles() {    
     let query = 'SELECT role.id, role.title, department.name AS Department, role.salary FROM role LEFT JOIN department ON role.department_id = department.id'
     connection.query(query, (err, roles) => {
-        if(err) throw err;        
-        console.table(roles);        
+        if(err) throw err; 
+        console.log(chalk.hex('#23C552')('Displaying Role Table'));
+        console.log(chalk.hex('#F84F31')('----------------------------------------'));
+        console.table(roles); 
+        console.log(chalk.hex('#F84F31')('----------------------------------------'));              
         startQuestions();
     })    
 }
-
+// employees can be viewed in different ways - this inquirer prompt provides three options to display employees
 function viewEmployees() {
     inquirer.prompt(
         {
@@ -311,10 +299,17 @@ function viewEmployees() {
 
 //functions to view employees
 //================================================
-function viewAllEmployees() {    
-    selectTable('employee');
+function viewAllEmployees() {   
+    connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name,  " ", m.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee m ON m.id = employee.manager_id', (err, employees) => {
+        if(err) throw err;
+        console.log(chalk.hex('#23C552')('Displaying All Employees Table Table'));
+        console.log(chalk.hex('#F84F31')('------------------------------------------------------------------------'));
+        console.table(employees);
+        console.log(chalk.hex('#F84F31')('------------------------------------------------------------------------'));        
+        startQuestions();
+    })     
 }
-
+// a function to view employs by department
 function viewEmployeesByDepartment() {  
     connection.query('SELECT * FROM department', (err, departments) => { 
         if(err) throw err;        
@@ -336,13 +331,16 @@ function viewEmployeesByDepartment() {
                            
             connection.query(query, [res.depts], (err, empByDept) => {
                 if(err) throw err;
+                console.log(chalk.hex('#23C552')(`Displaying ${res.depts} department's employees in a table`));
+                console.log(chalk.hex('#F84F31')('----------------------------------------------------------------'));
                 console.table(empByDept)
+                console.log(chalk.hex('#F84F31')('----------------------------------------------------------------')); 
                 startQuestions();
             })
         })
     })    
 }
-
+// a function to view employees under a manager
 function viewEmployeesByManager() {
     connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;
@@ -364,8 +362,11 @@ function viewEmployeesByManager() {
             connection.query('SELECT id FROM employee WHERE CONCAT(first_name, " ", last_name) = ?', [res.manager], (err, manId) => {
                 if(err) throw err;                
                 connection.query('SELECT * FROM employee WHERE manager_id = ?', [manId[0].id], (err, employees) => {
-                    if(err) throw err;                    
-                    console.table(employees);                           
+                    if(err) throw err; 
+                    console.log(chalk.hex('#23C552')(`Displaying employees working under manager ${res.manager} in a table`));
+                    console.log(chalk.hex('#F84F31')('----------------------------------------------------'));
+                    console.table(employees); 
+                    console.log(chalk.hex('#F84F31')('----------------------------------------------------'));                    
                     startQuestions();
                 })
             })
@@ -393,7 +394,7 @@ function removeEmployees() {
         .then(res => {
             connection.query('DELETE FROM employee WHERE CONCAT(first_name, " ", last_name) = ?', [res.select], (err)=>{
                 if(err) throw err;
-                console.log(`${res.select} has been deleted from the database`)
+                console.log(chalk.hex('#df4759')(`${chalk.bold(res.select)} has been deleted from the database)`))
                 startQuestions();
             })
         })
@@ -441,7 +442,9 @@ function updateEmployeeRoles() {
                         let newId = data[0].id
                         connection.query(`UPDATE employee SET employee.role_id = '${newId}' WHERE CONCAT(employee.first_name, " ", employee.last_name) = ?`, [answer.employee], (err) => {
                             if(err) throw err;
-                            console.log('role has been updated');
+                            console.log(chalk.magenta('-----------------------------------------'))
+                            console.log(chalk.hex('#4BB543')(`${answer.employee}'s role has been updated`))
+                            console.log(chalk.magenta('-----------------------------------------'))
                             startQuestions();
                         })
                     })
@@ -451,3 +454,35 @@ function updateEmployeeRoles() {
     })
 }
 
+//Function to view utilized budget in each department
+function viewUtilizedBudget() {
+    connection.query('SELECT * FROM department', (err, departments) => { 
+        if(err) throw err;        
+        let deptArr = [];         
+        for(const department of departments) {
+            let dept = department.name;
+            deptArr.push(dept)
+        }
+        inquirer.prompt(
+            {
+                type: 'list',
+                name: 'dept',
+                message: 'Which department would like to view its utilized budget for?',
+                choices: deptArr
+            }
+        )
+        .then(answer => {            
+            connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id WHERE department.name = ?', [answer.dept], (err, employees) => {
+                if(err) throw err;
+                let utilizedBudget = 0;
+                    for(employee of employees) {
+                        utilizedBudget += employee.salary;
+                    }
+                    console.log(chalk.magenta('-------------------------------------------------'))
+                    console.log(chalk.hex('#f0ad4e')(`Total Utilized budget for ${chalk.bold.hex('#23C552')(answer.dept)} department is: ${chalk.hex('##df4759')(utilizedBudget)}`));
+                    console.log(chalk.magenta('-------------------------------------------------'))
+                startQuestions();
+            })
+        })
+    })
+}
