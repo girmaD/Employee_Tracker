@@ -17,8 +17,3 @@ VALUES ("David", "Corn",  1), ("Girma", "Ebssa", 2);
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
 VALUES ("Newman", "Noman",  2, 2)
 
-UPDATE employee
-LEFT JOIN role
- ON employee.role_id = role.id
- SET employee.role_id = role.id
- WHERE employee.first_name = "David" AND role.title = "Developer"
