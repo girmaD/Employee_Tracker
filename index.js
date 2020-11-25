@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const figlet = require('figlet');
 require('dotenv').config();
 
-// connecting to the mysql database
+// connection credentials to the database
 const connection = mysql.createConnection({
     host: "localhost",   
     port: 3306,    
@@ -17,7 +17,7 @@ const connection = mysql.createConnection({
     database: process.env.SQL_DB
 });
 
-//once attempts were made to connect to databse - a call back function that throws err if err or start other functions if successul
+//attempt to connect to databse -  throw err if err or start other functions if successul
 connection.connect(err => {
     if (err) throw err;
     console.log(`connected as id  ${connection.threadId} \n`);  
