@@ -5,6 +5,7 @@ const inquirer = require('inquirer');
 const express = require("express");
 const cTable = require('console.table');
 const chalk = require('chalk');
+const figlet = require('figlet');
 require('dotenv').config();
 
 // connecting to the mysql database
@@ -20,9 +21,15 @@ const connection = mysql.createConnection({
 connection.connect(err => {
     if (err) throw err;
     console.log(`connected as id  ${connection.threadId} \n`);  
-    // this is the function that starts it all
-    startQuestions();
+    // this is the function that starts it all   
+   startQuestions();
 });
+
+console.log(
+    chalk.hex('#F84F31')(
+        figlet.textSync('Employee Manager', {horizontalLayout: "default"})
+    )
+);
 
 //For fields defined as NOT NULL in the table schema, this function validates by not accepting null values on inquirer
 function notNull(answer) {
@@ -170,7 +177,7 @@ function addRoles() {
 // a function to add new employees to the database
 function addEmployees() {
     let roleTitle = []; 
-    let empArr = [];
+    let empArr = ['None'];
     connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;        
         for(const employee of employees) {
@@ -227,13 +234,13 @@ function addEmployees() {
                         first_name: res.fName,
                         last_name: res.lName,
                         role_id: roleId || null,
-                        manager_id: manager[0].id || null
+                        manager_id: res.manager !== 'None' ? manager[0].id : null                        
                     }, 
                 (err) => {
                     if(err) throw err;
-                    console.log(chalk.magenta('-----------------------------------------'))
+                    console.log(chalk.magenta('--------------------------------------------------'))
                     console.log(chalk.hex('#4BB543')('New employee has been added to the database'))
-                    console.log(chalk.magenta('-----------------------------------------'))
+                    console.log(chalk.magenta('--------------------------------------------------'))
                     startQuestions();
                 })
             })
