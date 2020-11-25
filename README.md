@@ -28,15 +28,15 @@
  * npm i -> will insall the dependecies
 
 ## How To Use The App
-- Launch the app either on the terminal - using (node index.js)
+- Launch the app on the terminal - using (node index.js)
 - A list of activities related to the data will be populated.
 - Select the activity you would like to do using down/up arrow keys.
 - Answer each questions prompted to you and when it is done - the result of the activity will be displayed on the console.
 
 ![Alt text](./Assets/firstPage.png)
 
-- If you choose an activity that affects the data such as add, update or delete - a notification will be displayed once the effect takes place.
-- As an example, if a user chooses to add employee to the database, notification saying *New employee has been added to the database* will appear on the console once adding the employee is completed.
+- If a user chooses an activity that affects the data such as add, update or delete - a notification will be displayed once the effect takes place.
+- As an example, if a user chooses to add employee to the database, notification saying **New employee has been added to the database** will appear on the console once adding the employee is completed.
 
 ![Alt text](./Assets/addEmployee.png)
 

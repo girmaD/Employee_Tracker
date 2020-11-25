@@ -214,7 +214,7 @@ function addEmployees() {
             {
                 type: 'list',
                 name: 'manager',
-                message: 'What is the manager name of this employee?',
+                message: 'What is the name of this employee\'s manager?',
                 choices: empArr
             }
         ])
