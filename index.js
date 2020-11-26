@@ -24,7 +24,7 @@ connection.connect(err => {
     // this is the function that starts it all   
    startQuestions();
 });
-
+//ACSII art on the command line!
 console.log(
     chalk.hex('#F84F31')(
         figlet.textSync('Employee Manager', {horizontalLayout: "default"})
@@ -128,8 +128,7 @@ function addRoles() {
         for(const department of departments) {
             let dept = department.name;
             deptArr.push(dept)
-        }
-       
+        }        
         inquirer.prompt([
             {
                 type: 'input',
@@ -184,7 +183,7 @@ function addEmployees() {
             let emp = `${employee.first_name} ${employee.last_name}`;
             empArr.push(emp)
         } 
-    })
+    })    
     connection.query('SELECT * FROM role', (err, roles) => { 
         if(err) throw err;                
         for(const role of roles) {
@@ -252,12 +251,11 @@ function viewDepartments() {
     connection.query('SELECT * FROM department', (err, departments) => {
         if(err) throw err;
         console.log(chalk.hex('#23C552')('Displaying Department Table'));
-        console.log(chalk.hex('#F84F31')('------------------------------'));
-        console.table(departments);
+        console.log(chalk.hex('#F84F31')('------------------------------'));               
+        console.table(departments)
         console.log(chalk.hex('#F84F31')('------------------------------'));
         startQuestions();
     })   
-    // selectTable('department');
 }
 //A function to view all roles in the database
 function viewRoles() {    
@@ -317,7 +315,7 @@ function viewAllEmployees() {
     })     
 }
 // a function to view employs by department
-function viewEmployeesByDepartment() {  
+function viewEmployeesByDepartment() {      
     connection.query('SELECT * FROM department', (err, departments) => { 
         if(err) throw err;        
         let deptArr = [];         
@@ -325,6 +323,7 @@ function viewEmployeesByDepartment() {
             let dept = department.name;
             deptArr.push(dept)
         }
+    
         inquirer.prompt(
             {
                 type: 'list',
@@ -348,7 +347,7 @@ function viewEmployeesByDepartment() {
     })    
 }
 // a function to view employees under a manager
-function viewEmployeesByManager() {
+function viewEmployeesByManager() {    
     connection.query('SELECT * FROM employee', (err, employees) => {
         if(err) throw err;
         let empArr = [];
@@ -381,6 +380,7 @@ function viewEmployeesByManager() {
     })
 }
 
+
 // a function to remove employee from the database
 function removeEmployees() {
     connection.query('SELECT * FROM employee', (err, employees) => {
@@ -405,8 +405,7 @@ function removeEmployees() {
                 startQuestions();
             })
         })
-    })
-   
+    })   
 }
 // A function to update employee roles
 //====================================
